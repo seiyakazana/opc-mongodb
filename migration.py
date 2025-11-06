@@ -1,8 +1,8 @@
 import pandas as pd
 from pymongo import MongoClient
 
-CSV_PATH = "C:/Users/paule/Documents/OpenCR/Projet 5 - MongoDB/opc-mongodb/healthcare_dataset.csv"
-MONGO_URI      = "mongodb://localhost:27017"
+CSV_PATH = "/app/data/healthcare_dataset.csv"
+MONGO_URI      = "mongodb://mongo:27017"
 DB_NAME        = "mydb"
 COLLECTION_NAME= "mycollection"
 
