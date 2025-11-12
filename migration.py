@@ -1,5 +1,6 @@
 import pandas as pd
 from pymongo import MongoClient
+from integrity import check_integrity
 
 #config
 CSV_PATH = "/app/data/healthcare_dataset.csv"
@@ -14,13 +15,18 @@ coll = client[DB_NAME][COLLECTION_NAME]
 def migrate_csv_to_mongo():
     #import csv
     df = pd.read_csv(CSV_PATH)
-
+    
     #transform
+    df = df.drop_duplicates()
     df['Name'] = df['Name'].str.title()
+    check_integrity(df)
     records = df.to_dict(orient="records")
 
     result = coll.insert_many(records)
     print(f"Inserted {len(result.inserted_ids)} documents into {DB_NAME}.{COLLECTION_NAME}")
+
+    df_after = pd.DataFrame(list(coll.find({}, {"_id": 0})))
+    check_integrity(df_after)
 
 def create(document):
     result = coll.insert_one(document)
@@ -29,7 +35,7 @@ def create(document):
 def read_one(filter):
     return coll.find_one(filter)
 
-def update_one(filter, update, upsert):
+def update_one(filter, update, upsert=False):
     res = coll.update_one(filter, update, upsert=upsert)
     return {
         "matched_count": res.matched_count,
@@ -44,21 +50,41 @@ def delete_one(filter) :
 
 def main():
     migrate_csv_to_mongo()
-    #Create one
-    new_id = create({"Name": "New Person", "Age": 99, "City": "Paris"})
+
+    new_patient = {
+        "Name": "Marco Alvarez",
+        "Age": 54,
+        "Gender": "Male",
+        "Blood Type": "A+",
+        "Medical Condition": "Hypertension",
+        "Date of Admission": "2023-11-12",
+        "Doctor": "Sarah Thompson",
+        "Hospital": "St. Helena General Hospital",
+        "Insurance Provider": "United Health",
+        "Billing Amount": 6220.55,
+        "Room Number": 208,
+        "Admission Type": "Emergency",
+        "Discharge Date": "2023-11-18",
+        "Medication": "Lisinopril",
+        "Test Results": "Normal",
+    }
+
+
+    # Create one
+    new_id = create(new_patient)
     print("Inserted one document with _id:", new_id)
 
-    #Read one (by id)
+    # Read one (by id)
     one = read_one({"_id": new_id})
     print("Read one by _id:", one)
 
-    #Update one
-    upd = update_one({"_id": new_id}, {"$set": {"Age": 100}})
+    # Update one (for example, change test result)
+    upd = update_one({"_id": new_id}, {"$set": {"Test Results": "Abnormal"}})
     print("Update result:", upd)
 
-    #Delete one
-    upd = update_one({"_id": new_id}, {"$set": {"Age": 100}})
-    print("Update result:", upd)
+    # Delete one
+    deleted = delete_one({"_id": new_id})
+    print("Deleted documents:", deleted)
 
 if __name__ == "__main__":
     main()
