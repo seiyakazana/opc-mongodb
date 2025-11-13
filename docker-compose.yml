@@ -11,14 +11,17 @@ services:
     build: .
     depends_on:
       - mongo
-    environment:
-      MONGO_URI: mongodb://mongo:27017
-      DB_NAME: mydb
-      COLLECTION_NAME: mycollection
-      CSV_PATH: /app/data/healthcare_dataset.csv
     volumes:
       - ./data:/app/data
     command: python migration.py
+
+  auth_app:
+    build: .
+    depends_on:
+      - mongo
+    stdin_open: true   # allow interactive input
+    tty: true          # nice terminal for menu and getpass
+    command: python auth_app.py
 
 volumes:
   mongo_data:
