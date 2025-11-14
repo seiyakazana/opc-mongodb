@@ -48,6 +48,86 @@ Les utilisateurs sont stockés dans MongoDB sous la collection `users`, avec :
 
 ---
 
+## 🗄️ Schéma de la base de données
+
+La base de données MongoDB utilisée s’appelle **`mydb`** et contient deux collections principales : `mycollection` (patients) et `users` (authentification).
+
+```text
+mydb
+├─ mycollection   (données patients)
+└─ users          (utilisateurs et rôles)
+```
+
+### 📂 Collection `mycollection` (patients)
+
+Chaque document de la collection `mycollection` représente un patient, par exemple :
+
+```json
+{
+  "_id": ObjectId("..."),
+  "Name": "Bobby Jackson",
+  "Age": 30,
+  "Gender": "Male",
+  "Blood Type": "B-",
+  "Medical Condition": "Cancer",
+  "Date of Admission": "2024-01-31",
+  "Doctor": "Matthew Smith",
+  "Hospital": "Sons and Miller",
+  "Insurance Provider": "Blue Cross",
+  "Billing Amount": 18856.28,
+  "Room Number": 328,
+  "Admission Type": "Urgent",
+  "Discharge Date": "2024-02-02",
+  "Medication": "Paracetamol",
+  "Test Results": "Normal"
+}
+```
+
+Principaux champs :
+
+| Champ                | Type       | Description                          |
+|----------------------|-----------|--------------------------------------|
+| `_id`                | ObjectId  | Identifiant unique MongoDB          |
+| `Name`               | String    | Nom du patient                      |
+| `Age`                | Number    | Âge du patient                      |
+| `Gender`             | String    | Sexe du patient                     |
+| `Blood Type`         | String    | Groupe sanguin                      |
+| `Medical Condition`  | String    | Pathologie principale               |
+| `Date of Admission`  | String    | Date d’admission                    |
+| `Doctor`             | String    | Médecin en charge                   |
+| `Hospital`           | String    | Nom de l’hôpital                    |
+| `Insurance Provider` | String    | Assurance du patient                |
+| `Billing Amount`     | Number    | Montant facturé                     |
+| `Room Number`        | Number    | Numéro de chambre                   |
+| `Admission Type`     | String    | Type d’admission (Urgent, etc.)     |
+| `Discharge Date`     | String    | Date de sortie                      |
+| `Medication`         | String    | Médication principale               |
+| `Test Results`       | String    | Résultats des examens               |
+
+### 👤 Collection `users` (authentification)
+
+Chaque document de la collection `users` représente un compte utilisateur :
+
+```json
+{
+  "_id": ObjectId("..."),
+  "username": "admin123",
+  "password_hash": "<hash bcrypt>",
+  "role": "admin"
+}
+```
+
+Champs :
+
+| Champ           | Type      | Description                                      |
+|-----------------|-----------|--------------------------------------------------|
+| `_id`           | ObjectId  | Identifiant unique MongoDB                      |
+| `username`      | String    | Identifiant de connexion                        |
+| `password_hash` | Binary / String | Mot de passe hashé avec bcrypt         |
+| `role`          | String    | Rôle de l’utilisateur (`admin` ou `doctor`)     |
+
+---
+
 ## 🐳 Déploiement avec Docker
 
 ### 1️⃣ Lancer MongoDB et la migration CSV
@@ -68,7 +148,8 @@ docker compose run --rm auth_app
 ---
 
 ## 📁 Structure du projet
-```
+
+```text
 project/
 │── migration.py
 │── auth_app.py
