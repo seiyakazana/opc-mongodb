@@ -134,7 +134,6 @@ def delete_patient(user):
     else:
         print("No patient found with that name.\n")
 
-# --- Main menu ---
 def main_menu(user):
     while True:
         print("=== Main menu ===")

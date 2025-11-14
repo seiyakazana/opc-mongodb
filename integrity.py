@@ -1,4 +1,3 @@
-# integrity.py
 import pandas as pd
 
 REQUIRED_COLS = [

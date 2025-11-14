@@ -19,8 +19,8 @@ services:
     build: .
     depends_on:
       - mongo
-    stdin_open: true   # allow interactive input
-    tty: true          # nice terminal for menu and getpass
+    stdin_open: true   
+    tty: true         
     command: python auth_app.py
 
 volumes:
