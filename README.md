@@ -3,68 +3,82 @@
 Ce projet permet :
 
 1. **D’importer automatiquement un fichier CSV dans MongoDB** via `migration.py`.  
-2. **D’accéder et de modifier les données** avec un système d’authentification simple (`auth_app.py`).  
-3. **De créer des utilisateurs** (admin ou doctor) via `create_user.py`.  
+2. **D’accéder et de modifier les données patients** via une application Python (`auth_app.py`).  
+3. **De gérer des utilisateurs applicatifs** (admin / doctor) stockés dans MongoDB (`create_user.py`).  
+4. **D’utiliser deux types d'utilisateurs MongoDB** pour sécuriser l’architecture.
 
 ---
 
-## 🚀 Fonctionnement général
+# 🔐 Architecture des utilisateurs
 
-### 🔄 Migration des données
-
-Le script `migration.py` :
-
-- lit le fichier CSV,  
-- vérifie l’intégrité des données,  
-- insère les documents dans MongoDB (collection `mycollection`).  
-
-La migration s’exécute automatiquement via Docker Compose (service `loader`).
+Le projet utilise **deux niveaux d’utilisateurs**, chacun ayant un rôle différent :
 
 ---
 
-## 🔐 Authentification & rôles utilisateurs
+## 1️⃣ **Utilisateurs MongoDB (techniques – niveau base de données)**
 
-Le script `auth_app.py` propose un **menu interactif** après connexion.
+Créés automatiquement au lancement grâce à `mongo-init.js`.
 
-Les utilisateurs sont stockés dans MongoDB sous la collection `users`, avec :
+| Utilisateur MongoDB | Rôle | Utilisation |
+|---------------------|------|-------------|
+| **root** | Accès total au serveur MongoDB | Administrateur système |
+| **db_admin** | `dbOwner` sur `mydb` | Exécute la migration CSV |
+| **app_user** | `readWrite` sur `mydb` | Utilisé par l’application (`auth_app.py`) |
 
-- un **nom d’utilisateur**,  
-- un **mot de passe hashé** (bcrypt),  
-- un **rôle** attribué.  
-
-### Rôles disponibles
-
-#### 🟦 Admin
-- Lire les patients  
-- Mettre à jour des patients  
-- Créer des patients  
-- Supprimer des patients  
-
-#### 🟩 Doctor
-- Lire les patients  
-- Mettre à jour des patients  
-- ❌ Ne peut pas créer  
-- ❌ Ne peut pas supprimer  
+➡️ Ces utilisateurs *n’apparaissent pas* dans vos collections MongoDB.  
+➡️ Ils servent uniquement à autoriser vos scripts Python à se connecter.
 
 ---
 
-## 🗄️ Schéma de la base de données
+## 2️⃣ **Utilisateurs de l’application (stockés dans MongoDB)**
 
-La base de données MongoDB utilisée s’appelle **`mydb`** et contient deux collections principales : `mycollection` (patients) et `users` (authentification).
+Stockés dans `mydb.users`, créés via `create_user.py`.
 
-```text
+| Rôle applicatif | Actions autorisées |
+|------------------|--------------------|
+| **admin** | Lire, créer, modifier, supprimer des patients |
+| **doctor** | Lire et modifier des patients uniquement |
+
+➡️ Ces utilisateurs se connectent à **l’application Python**, pas à MongoDB directement.
+
+---
+
+# 🔄 Migration des données (loader)
+
+Le service Docker **loader** exécute automatiquement :
+
+- `migration.py`
+- en utilisant le compte MongoDB **db_admin**
+- pour écrire dans `mydb.mycollection`
+
+Le script :
+
+- lit le fichier CSV dans `/data`
+- nettoie et transforme les données
+- vérifie l’intégrité (`integrity.py`)
+- insère les documents dans MongoDB
+
+---
+
+# 🗄️ Structure de la base de données
+
+Base : **`mydb`**
+
+```
 mydb
-├─ mycollection   (données patients)
-└─ users          (utilisateurs et rôles)
+├─ mycollection   → données patients
+└─ users          → comptes applicatifs (admin/doctor)
 ```
 
-### 📂 Collection `mycollection` (patients)
+---
 
-Chaque document de la collection `mycollection` représente un patient, par exemple :
+## 📂 Collection `mycollection` (patients)
+
+Chaque document contient les champs du CSV (nom, âge, médecin, assurance, etc.). Exemple :
 
 ```json
 {
-  "_id": ObjectId("..."),
+  "_id": "ObjectId(...)",
   "Name": "Bobby Jackson",
   "Age": 30,
   "Gender": "Male",
@@ -83,79 +97,79 @@ Chaque document de la collection `mycollection` représente un patient, par exem
 }
 ```
 
-Principaux champs :
+---
 
-| Champ                | Type       | Description                          |
-|----------------------|-----------|--------------------------------------|
-| `_id`                | ObjectId  | Identifiant unique MongoDB          |
-| `Name`               | String    | Nom du patient                      |
-| `Age`                | Number    | Âge du patient                      |
-| `Gender`             | String    | Sexe du patient                     |
-| `Blood Type`         | String    | Groupe sanguin                      |
-| `Medical Condition`  | String    | Pathologie principale               |
-| `Date of Admission`  | String    | Date d’admission                    |
-| `Doctor`             | String    | Médecin en charge                   |
-| `Hospital`           | String    | Nom de l’hôpital                    |
-| `Insurance Provider` | String    | Assurance du patient                |
-| `Billing Amount`     | Number    | Montant facturé                     |
-| `Room Number`        | Number    | Numéro de chambre                   |
-| `Admission Type`     | String    | Type d’admission (Urgent, etc.)     |
-| `Discharge Date`     | String    | Date de sortie                      |
-| `Medication`         | String    | Médication principale               |
-| `Test Results`       | String    | Résultats des examens               |
+## 👤 Collection `users` (utilisateurs applicatifs)
 
-### 👤 Collection `users` (authentification)
-
-Chaque document de la collection `users` représente un compte utilisateur :
+Exemple :
 
 ```json
 {
-  "_id": ObjectId("..."),
+  "_id": "ObjectId(...)",
   "username": "admin123",
   "password_hash": "<hash bcrypt>",
   "role": "admin"
 }
 ```
 
-Champs :
+---
 
-| Champ           | Type      | Description                                      |
-|-----------------|-----------|--------------------------------------------------|
-| `_id`           | ObjectId  | Identifiant unique MongoDB                      |
-| `username`      | String    | Identifiant de connexion                        |
-| `password_hash` | Binary / String | Mot de passe hashé avec bcrypt         |
-| `role`          | String    | Rôle de l’utilisateur (`admin` ou `doctor`)     |
+# 🧑‍💻 Application d’authentification (`auth_app.py`)
+
+Après connexion, l’application propose un menu permettant :
+
+| Action | admin | doctor |
+|--------|--------|---------|
+| Lire les patients | ✔ | ✔ |
+| Modifier un patient | ✔ | ✔ |
+| Créer un patient | ✔ | ❌ |
+| Supprimer un patient | ✔ | ❌ |
+| Rechercher un patient | ✔ | ✔ |
+
+L'application utilise **l’utilisateur MongoDB `app_user`**, avec un accès limité au strict nécessaire.
 
 ---
 
-## 🐳 Déploiement avec Docker
+# 🐳 Déploiement avec Docker
 
-### 1️⃣ Lancer MongoDB et la migration CSV
+## 1️⃣ Démarrer MongoDB + migration CSV
+
 ```bash
 docker compose up --build mongo loader
 ```
 
-### 2️⃣ Créer un utilisateur (admin ou doctor)
+MongoDB démarre → `mongo-init.js` crée les comptes →  
+Le loader importe le CSV automatiquement.
+
+---
+
+## 2️⃣ Créer un utilisateur applicatif (admin OU doctor)
+
 ```bash
 docker compose run --rm auth_app python create_user.py
 ```
 
-### 3️⃣ Lancer l’application d’authentification
+---
+
+## 3️⃣ Lancer l’application d’authentification
+
 ```bash
 docker compose run --rm auth_app
 ```
 
 ---
 
-## 📁 Structure du projet
+# 📁 Structure du projet
 
-```text
+```
 project/
 │── migration.py
 │── auth_app.py
 │── create_user.py
 │── integrity.py
+│── mongo-init.js
 │── docker-compose.yml
 │── Dockerfile
-└── data/healthcare_dataset.csv
+└── data/
+    └── healthcare_dataset.csv
 ```
