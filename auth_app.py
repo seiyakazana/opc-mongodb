@@ -54,6 +54,14 @@ def has_permission(user, action: str) -> bool:
     allowed_actions = ROLE_PERMISSIONS.get(role, set())
     return action in allowed_actions
 
+REQUIRED_COLS = [
+    'Name', 'Age', 'Gender', 'Blood Type', 'Medical Condition',
+    'Date of Admission', 'Doctor', 'Hospital', 'Insurance Provider',
+    'Billing Amount', 'Room Number', 'Admission Type', 'Discharge Date',
+    'Medication', 'Test Results'
+]
+
+
 def list_patients(user):
     if not has_permission(user, "read_patients"):
         print("Access denied.\n")
@@ -61,11 +69,10 @@ def list_patients(user):
 
     print("=== Patients ===")
     for p in patients.find():
-        print(
-            f"- id={p['_id']} | Name={p.get('Name')} | "
-            f"Age={p.get('Age')} | Condition={p.get('Medical Condition')}"
-        )
+        line = " | ".join(f"{col}={p.get(col)}" for col in REQUIRED_COLS)
+        print(f"- id={p['_id']} | {line}")
     print()
+
 
 def search_patient(user):
     if not has_permission(user, "search_patients"):
@@ -80,7 +87,12 @@ def search_patient(user):
         print("No patient found with that name.\n")
         return
 
-    print(f"Found patient: id={patient['_id']} | Name={patient.get('Name') }  | Age={patient.get('Age') }  | Medical Condition={patient.get('Medical Condition') } ")
+    print("Found patient:")
+    print(f"  id={patient['_id']}")
+    for col in REQUIRED_COLS:
+        print(f"  {col}: {patient.get(col)}")
+    print()
+
 
 def create_patient(user):
     if not has_permission(user, "create_patients"):
@@ -88,17 +100,15 @@ def create_patient(user):
         return
 
     print("=== Create patient ===")
-    name = input("Name: ").strip()
-    age = input("Age: ").strip()
-    condition = input("Medical Condition: ").strip()
+    doc = {}
 
-    doc = {
-        "Name": name,
-        "Age": int(age) if age.isdigit() else age,
-        "Medical Condition": condition,
-    }
+    for col in REQUIRED_COLS:
+        value = input(f"{col}: ").strip()
+        doc[col] = value
+
     result = patients.insert_one(doc)
     print(f"Patient created with _id={result.inserted_id}\n")
+
 
 def update_patient(user):
     if not has_permission(user, "update_patients"):
@@ -113,13 +123,27 @@ def update_patient(user):
         print("No patient found with that name.\n")
         return
 
-    print(f"Found patient: id={patient['_id']} | Name={patient.get('Name')}")
-    field = input("Field to update (e.g. 'Medical Condition', 'Age'): ").strip()
+    print("Found patient:")
+    print(f"  id={patient['_id']}")
+    for col in REQUIRED_COLS:
+        print(f"  {col}: {patient.get(col)}")
+
+    print("\nAvailable fields to update:")
+    print(", ".join(REQUIRED_COLS))
+
+    field = input("Field to update (exact name): ").strip()
+    if field not in REQUIRED_COLS:
+        print("Invalid field name. Update aborted.\n")
+        return
+
     new_value = input("New value: ").strip()
 
-    update = {field: int(new_value) if new_value.isdigit() else new_value}
-    patients.update_one({"_id": patient["_id"]}, {"$set": update})
+    patients.update_one(
+        {"_id": patient["_id"]},
+        {"$set": {field: new_value}}
+    )
     print("Patient updated.\n")
+
 
 def delete_patient(user):
     if not has_permission(user, "delete_patients"):
