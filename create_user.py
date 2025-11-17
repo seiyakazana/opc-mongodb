@@ -1,8 +1,9 @@
 from pymongo import MongoClient
 import bcrypt
+import os
 
-MONGO_URI = "mongodb://mongo:27017"
-DB_NAME = "mydb"
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://app_user:app_user_pwd@mongo:27017/mydb?authSource=mydb")
+DB_NAME = os.getenv("DB_NAME", "mydb")
 
 client = MongoClient(MONGO_URI)
 db = client[DB_NAME]

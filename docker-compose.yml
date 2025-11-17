@@ -4,13 +4,22 @@ services:
     container_name: mongo
     ports:
       - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpwd
+      MONGO_INITDB_DATABASE: mydb
     volumes:
       - mongo_data:/data/db
+      -  ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
 
   loader:
     build: .
     depends_on:
       - mongo
+    environment:
+      MONGO_URI: "mongodb://db_admin:db_admin_pwd@mongo:27017/mydb?authSource=mydb"
+      DB_NAME: "mydb"
+      COLLECTION_NAME: "mycollection"
     volumes:
       - ./data:/app/data
     command: python migration.py
@@ -20,7 +29,11 @@ services:
     depends_on:
       - mongo
     stdin_open: true   
-    tty: true         
+    tty: true 
+    environment:
+      MONGO_URI: "mongodb://app_user:app_user_pwd@mongo:27017/mydb?authSource=mydb"
+      DB_NAME: "mydb"
+      PATIENT_COLLECTION: "mycollection"     
     command: python auth_app.py
 
 volumes:

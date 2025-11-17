@@ -1,16 +1,18 @@
+import os
 import pandas as pd
 from pymongo import MongoClient
 from integrity import check_integrity
 
 #config
 CSV_PATH = "/app/data/healthcare_dataset.csv"
-MONGO_URI      = "mongodb://mongo:27017"
-DB_NAME        = "mydb"
-COLLECTION_NAME= "mycollection"
+MONGO_URI       = os.getenv("MONGO_URI", "mongodb://mongo:27017/mydb")
+DB_NAME         = os.getenv("DB_NAME", "mydb")
+COLLECTION_NAME = os.getenv("COLLECTION_NAME", "mycollection")
 
 #mongodb config
 client = MongoClient(MONGO_URI)
-coll = client[DB_NAME][COLLECTION_NAME]
+db = client[DB_NAME]
+coll = db[COLLECTION_NAME]
 
 def migrate_csv_to_mongo():
     #import csv

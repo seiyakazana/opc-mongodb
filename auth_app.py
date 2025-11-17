@@ -1,12 +1,12 @@
-# auth_app.py
+import os
 from getpass import getpass
 
 from pymongo import MongoClient
 import bcrypt
 
-MONGO_URI = "mongodb://mongo:27017"  
-DB_NAME = "mydb"
-PATIENT_COLLECTION = "mycollection"
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://mongo:27017/mydb")
+DB_NAME = os.getenv("DB_NAME", "mydb")
+PATIENT_COLLECTION = os.getenv("PATIENT_COLLECTION", "mycollection")
 
 client = MongoClient(MONGO_URI)
 db = client[DB_NAME]

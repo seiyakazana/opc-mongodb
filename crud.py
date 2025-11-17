@@ -1,11 +1,19 @@
+import os
 import pandas as pd
 from pymongo import MongoClient
 
 #config
 CSV_PATH = "/app/data/healthcare_dataset.csv"
-MONGO_URI      = "mongodb://mongo:27017"
-DB_NAME        = "mydb"
-COLLECTION_NAME= "mycollection"
+#config
+CSV_PATH = "/app/data/healthcare_dataset.csv"
+MONGO_URI       = os.getenv("MONGO_URI", "mongodb://mongo:27017/mydb")
+DB_NAME         = os.getenv("DB_NAME", "mydb")
+COLLECTION_NAME = os.getenv("COLLECTION_NAME", "mycollection")
+
+#mongodb config
+client = MongoClient(MONGO_URI)
+db = client[DB_NAME]
+coll = db[COLLECTION_NAME]
 
 #mongodb config
 client = MongoClient(MONGO_URI)
